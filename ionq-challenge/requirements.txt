@@ -1,0 +1,8 @@
+IPython
+matplotlib
+networkx
+numpy
+pandas
+qiskit[visualization]
+qiskit_aer
+jupyter
