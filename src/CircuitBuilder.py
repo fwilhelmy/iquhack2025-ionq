@@ -23,6 +23,48 @@ def build_ansatz(graph: nx.Graph) -> QuantumCircuit:
 
     return ansatz
 
+import networkx as nx
+from qiskit import QuantumCircuit
+from qiskit.circuit import ParameterVector
+
+def build_new_ansatz(graph: nx.Graph) -> QuantumCircuit:
+    num_qubits = graph.number_of_nodes()
+    ansatz = QuantumCircuit(num_qubits)
+    ansatz.h(range(num_qubits))
+
+    # Create a list of all edges (as tuples)
+    remaining_edges = list(graph.edges)
+    theta = ParameterVector(r"$\theta$", len(remaining_edges))
+    param_index = 0
+
+    # While there are still edges to schedule
+    while remaining_edges:
+        # Find a maximal set of edges with no shared qubits (a maximal matching)
+        layer = []
+        used_nodes = set()
+        for edge in remaining_edges:
+            u, v = edge
+            if u not in used_nodes and v not in used_nodes:
+                layer.append(edge)
+                used_nodes.update(edge)
+        
+        # For all edges in the current layer, add gates in parallel
+        for u, v in layer:
+            t = theta[param_index]
+            param_index += 1
+            ansatz.cx(u, v)
+            ansatz.ry(t, v)
+            ansatz.cx(u, v)
+        
+        # Remove the edges that have been scheduled
+        remaining_edges = [edge for edge in remaining_edges if edge not in layer]
+        
+        # Optionally, add a barrier between layers for clarity
+        ansatz.barrier()
+    
+    return ansatz
+
+
 def build_maxcut_hamiltonian(graph: nx.Graph) -> SparsePauliOp:
     """
     Build the MaxCut Hamiltonian for the given graph H = (|E|/2)*I - (1/2)*Σ_{(i,j)∈E}(Z_i Z_j)

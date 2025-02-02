@@ -1,21 +1,21 @@
 import Graphs
 from QITEvolver import QITEvolver
-from CircuitBuilder import build_ansatz, build_maxcut_hamiltonian, build_balanced_maxcut_hamiltonian, build_maxcut_connectivity_hamiltonian
+from CircuitBuilder import build_ansatz, build_new_ansatz, build_maxcut_hamiltonian, build_balanced_maxcut_hamiltonian, build_maxcut_connectivity_hamiltonian
 from qiskit_aer import AerSimulator
 from utils import compute_cut_size, interpret_solution
 from Scoring import generate_solutions, final_score
 import matplotlib.pyplot as plt
 
 # graph = Graphs.cycle_graph_c8() 
-# graph2 = Graphs.complete_bipartite_graph_k88() 
-# graph = Graphs.complete_bipartite_graph_k_nn(5) 
-graph = Graphs.regular_graph_4_8() 
+# graph = Graphs.complete_bipartite_graph_k88() 
+graph = Graphs.complete_bipartite_graph_k_nn(5) 
+# graph = Graphs.regular_graph_4_8() 
 # graph = Graphs.cubic_graph_3_16() 
 # graph6 = Graphs.random_connected_graph_16(p=0.18)
 # graph7 = Graphs.expander_graph_n(16) 
 #graph8 = -> make your own cool graph
 
-ansatz = build_ansatz(graph)
+ansatz = build_new_ansatz(graph)
 # ansatz.draw("mpl", fold=-1)
 
 ham = build_maxcut_connectivity_hamiltonian(graph, 5.0, 0, 1)
@@ -23,7 +23,7 @@ ham
 
 # Set up your QITEvolver and evolve!
 qit_evolver = QITEvolver(ham, ansatz)
-qit_evolver.evolve(num_steps=40, lr=0.2, momentum=0.3, verbose=False) # lr was 0.5
+qit_evolver.evolve(num_steps=40, lr=0.2, momentum=0.1, verbose=False) # lr was 0.5
 
 # Visualize your results!
 qit_evolver.plot_convergence()
@@ -95,3 +95,4 @@ print(f"Connected max-cut: {sum_connected_counts} out of {shots}")
 print("Base score: " + str(final_score(graph, bests["brute"]["solutions"], counts,shots,ansatz,'base')))
 print("Balanced score: " + str(final_score(graph,bests["balanced"]["solutions"],counts,shots,ansatz,'balanced')))
 print("Connected score: " + str(final_score(graph,bests["connected"]["solutions"],counts,shots,ansatz,'connected')))
+
