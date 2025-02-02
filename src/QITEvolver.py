@@ -36,7 +36,12 @@ class QITEvolver:
         self.num_shots = 10000
         self.energies, self.param_vals, self.runtime = list(), list(), list()
 
-    def evolve(self, num_steps: int, lr: float = 0.4,  momentum: float = 0.9, verbose: bool = True):
+    def evolve(self, 
+               num_steps: int, 
+               init_lr: float = 0.4, 
+               lr_decay: float = 0.01, 
+               momentum: float = 0.9, 
+               verbose: bool = True):
         """
         Evolve the variational quantum state encoded by ``self.ansatz`` under
         the action of ``self.hamiltonian`` according to varQITE.
@@ -56,12 +61,13 @@ class QITEvolver:
             dcurr_params = np.linalg.lstsq(Gmat, dvec, rcond=1e-2)[0]
 
             # Update the velocity (accumulated gradient) with the current gradient.
-            velocity = momentum * velocity + lr * dcurr_params
+            learning_rate = init_lr/(1+lr_decay*k)
+            velocity = momentum * velocity + learning_rate * dcurr_params
             curr_params += velocity
-            # curr_params += lr * dcurr_params
+            # curr_params += init_lr * dcurr_params
 
             # update the tqdm bar with the velocity and current energy
-            tqdm.write(f"Velocity: {velocity} | Energy: {curr_energy}")
+            tqdm.write(f"Velocity: {velocity} | Learning Rate : {learning_rate} | Energy: {curr_energy}")
             
             # Progress checkpoint!
             if verbose:

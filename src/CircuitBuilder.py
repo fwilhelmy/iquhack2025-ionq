@@ -9,6 +9,7 @@ import networkx as nx
 from qiskit import QuantumCircuit
 from qiskit.circuit import ParameterVector
 from qiskit.quantum_info import SparsePauliOp
+from copy import deepcopy
 
 def build_ansatz(graph: nx.Graph) -> QuantumCircuit:
     
@@ -21,18 +22,19 @@ def build_ansatz(graph: nx.Graph) -> QuantumCircuit:
         ansatz.ry(t, v)
         ansatz.cx(u, v)
 
-    return ansatz
+    ansatz.barrier()
 
-import networkx as nx
-from qiskit import QuantumCircuit
-from qiskit.circuit import ParameterVector
+    # beta = ParameterVector(r"$\beta$", graph.number_of_edges())
+    # for b, q in zip(beta, range(graph.number_of_nodes())):
+    #     ansatz.rz(b, q)
+
+    return ansatz
 
 def build_new_ansatz(graph: nx.Graph) -> QuantumCircuit:
     num_qubits = graph.number_of_nodes()
     ansatz = QuantumCircuit(num_qubits)
     ansatz.h(range(num_qubits))
 
-    # Create a list of all edges (as tuples)
     remaining_edges = list(graph.edges)
     theta = ParameterVector(r"$\theta$", len(remaining_edges))
     param_index = 0
@@ -61,6 +63,10 @@ def build_new_ansatz(graph: nx.Graph) -> QuantumCircuit:
         
         # Optionally, add a barrier between layers for clarity
         ansatz.barrier()
+
+        # beta = ParameterVector(r"$\beta$", graph.number_of_edges())
+        # for b, q in zip(beta, range(num_qubits)):
+        #     ansatz.rz(b, q)
     
     return ansatz
 
@@ -148,11 +154,6 @@ def build_balanced_maxcut_hamiltonian(graph: nx.Graph) -> SparsePauliOp:
     coeffs = [pauli_dict[term] for term in pauli_terms]
     
     return SparsePauliOp.from_list(list(zip(pauli_terms, coeffs)))
-
-import networkx as nx
-from qiskit.quantum_info import SparsePauliOp
-from itertools import product
-from copy import deepcopy
 
 def build_maxcut_connectivity_hamiltonian(graph: nx.Graph, lam: float, r: int, s: int) -> SparsePauliOp:
     """

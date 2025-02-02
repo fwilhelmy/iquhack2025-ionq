@@ -1,6 +1,6 @@
 import Graphs
 from QITEvolver import QITEvolver
-from CircuitBuilder import build_ansatz, build_new_ansatz, build_maxcut_hamiltonian, build_balanced_maxcut_hamiltonian, build_maxcut_connectivity_hamiltonian
+from CircuitBuilder import build_ansatz, build_new_ansatz, build_maxcut_hamiltonian, build_balanced_maxcut_hamiltonian,  build_maxcut_connectivity_hamiltonian
 from qiskit_aer import AerSimulator
 from utils import compute_cut_size, interpret_solution
 from Scoring import generate_solutions, final_score
@@ -8,22 +8,29 @@ import matplotlib.pyplot as plt
 
 # graph = Graphs.cycle_graph_c8() 
 # graph = Graphs.complete_bipartite_graph_k88() 
-graph = Graphs.complete_bipartite_graph_k_nn(5) 
-# graph = Graphs.regular_graph_4_8() 
+# graph = Graphs.complete_bipartite_graph_k_nn(5) 
+graph = Graphs.regular_graph_4_8() 
 # graph = Graphs.cubic_graph_3_16() 
 # graph6 = Graphs.random_connected_graph_16(p=0.18)
 # graph7 = Graphs.expander_graph_n(16) 
 #graph8 = -> make your own cool graph
 
-ansatz = build_new_ansatz(graph)
+ansatz = build_ansatz(graph)
+# print(f"Circuit depth: {ansatz.depth()}")
 # ansatz.draw("mpl", fold=-1)
+# plt.show()
 
-ham = build_maxcut_connectivity_hamiltonian(graph, 5.0, 0, 1)
-ham
+# ansatz = build_new_ansatz(graph)
+# print(f"Circuit depth: {ansatz.depth()}")
+# ansatz.draw("mpl", fold=-1)
+# plt.show()
+
+ham = build_maxcut_hamiltonian(graph)
+print(ham)
 
 # Set up your QITEvolver and evolve!
 qit_evolver = QITEvolver(ham, ansatz)
-qit_evolver.evolve(num_steps=40, lr=0.2, momentum=0.1, verbose=False) # lr was 0.5
+qit_evolver.evolve(num_steps=50, init_lr=0.2, lr_decay=0, momentum=0, verbose=False) # lr was 0.5
 
 # Visualize your results!
 qit_evolver.plot_convergence()
@@ -40,14 +47,11 @@ counts = backend.run(optimized_state, shots=shots).result().get_counts()
 cut_vals = sorted(((bs, compute_cut_size(graph, bs)) for bs in counts), key=lambda t: t[1])
 best_bs = cut_vals[-1][0]
 
-# take the top 10 bitstrings by cut value
-top_10_bs = cut_vals[-10:]
-
 # Now find the most likely MaxCut solution as sampled from your optimized state
 # We'll leave this part up to you!!!
 most_likely_soln = ""
 
-# print(counts)
+print(counts)
 
 interpret_solution(graph, best_bs)
 print("Cut value: "+str(compute_cut_size(graph, best_bs)))
@@ -95,4 +99,3 @@ print(f"Connected max-cut: {sum_connected_counts} out of {shots}")
 print("Base score: " + str(final_score(graph, bests["brute"]["solutions"], counts,shots,ansatz,'base')))
 print("Balanced score: " + str(final_score(graph,bests["balanced"]["solutions"],counts,shots,ansatz,'balanced')))
 print("Connected score: " + str(final_score(graph,bests["connected"]["solutions"],counts,shots,ansatz,'connected')))
-

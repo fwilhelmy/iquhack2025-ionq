@@ -1,0 +1,3 @@
+- Why is the new ansatz not working for the first maxcut???
+- Why does it crash in complex graphs??
+- Is the momentum and learning rate decay helping at all?
