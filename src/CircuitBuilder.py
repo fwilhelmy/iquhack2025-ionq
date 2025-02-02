@@ -106,3 +106,145 @@ def build_balanced_maxcut_hamiltonian(graph: nx.Graph) -> SparsePauliOp:
     coeffs = [pauli_dict[term] for term in pauli_terms]
     
     return SparsePauliOp.from_list(list(zip(pauli_terms, coeffs)))
+
+import networkx as nx
+from qiskit.quantum_info import SparsePauliOp
+from itertools import product
+from copy import deepcopy
+
+def build_maxcut_connectivity_hamiltonian(graph: nx.Graph, lam: float, r: int, s: int) -> SparsePauliOp:
+    """
+    Build the Hamiltonian for MaxCut with connectivity constraints.
+    
+    The Hamiltonian is given by:
+    
+        H = H_maxcut + λ (H_conn,S + H_conn,T)
+    
+    with
+        H_maxcut = (|E|/2)*I - (1/2)*Σ_{(i,j)∈E} Z_i Z_j,
+    
+        H_conn,S = Σ_{v ∈ V\{r}} (I - Z_v)/2 · ∏_{w ∈ N(v)} ((I + Z_w)/2),
+    
+        H_conn,T = Σ_{v ∈ V\{s}} (I + Z_v)/2 · ∏_{w ∈ N(v)} ((I - Z_w)/2).
+    
+    This implements the mapping X = (I - Z)/2.
+    
+    Parameters:
+        graph (nx.Graph): An undirected graph with nodes labeled 0,1,...,n-1.
+        lam (float): Penalty coefficient for connectivity.
+        r (int): Chosen “root” in the S partition (X=1).
+        s (int): Chosen “root” in the T partition (X=0).
+    
+    Returns:
+        SparsePauliOp: The Hamiltonian as a sum of Pauli terms.
+    """
+    num_qubits = len(graph.nodes)
+    # Dictionary to collect Pauli terms (pauli string -> coefficient)
+    terms = {}
+
+    def add_term(pauli_str: str, coeff: float):
+        if pauli_str in terms:
+            terms[pauli_str] += coeff
+        else:
+            terms[pauli_str] = coeff
+
+    # ---------------------------
+    # 1. Build H_maxcut
+    # ---------------------------
+    # H_maxcut = (|E|/2)*I - (1/2)*sum_{(u,v) in E} Z_u Z_v
+    edges = list(graph.edges())
+    num_edges = len(edges)
+    identity = "I" * num_qubits
+    add_term(identity, -num_edges/2)
+    for (u, v) in edges:
+        pauli_list = ["I"] * num_qubits
+        pauli_list[u] = "Z"
+        pauli_list[v] = "Z"
+        add_term("".join(pauli_list), 0.5)
+
+    # ---------------------------
+    # 2. Helper: convert a set of qubit indices (which get a 'Z') to a Pauli string.
+    # ---------------------------
+    def pauli_string_from_set(pset: set) -> str:
+        return "".join(["Z" if i in pset else "I" for i in range(num_qubits)])
+    
+    # ---------------------------
+    # 3. Build connectivity penalty for partition S
+    #    For each v ≠ r, add the term:
+    #      (I - Z_v)/2 · ∏_{w in N(v)} ((I + Z_w)/2)
+    # ---------------------------
+    for v in graph.nodes():
+        if v == r:
+            continue
+        neighbors = list(graph.neighbors(v))
+        # Expand (I - Z_v)/2:
+        # Two base terms: choosing I on v (coefficient 1/2) or -Z on v (coefficient -1/2)
+        base_terms = [(1/2, set()), (-1/2, {v})]
+        # For each neighbor w, multiply by the factor (I + Z_w)/2.
+        # This factor yields two choices: I with coefficient 1/2 or Z with coefficient 1/2.
+        for w in neighbors:
+            new_base_terms = []
+            for coeff, pset in base_terms:
+                # Option 1: choose I on w (factor 1/2)
+                new_coeff = coeff * (1/2)
+                new_pset = deepcopy(pset)
+                new_base_terms.append((new_coeff, new_pset))
+                # Option 2: choose Z on w (factor 1/2).
+                # (Since Z*Z = I, we “toggle” w: if already present, remove it; else add it.)
+                new_coeff = coeff * (1/2)
+                new_pset = deepcopy(pset)
+                if w in new_pset:
+                    new_pset.remove(w)
+                else:
+                    new_pset.add(w)
+                new_base_terms.append((new_coeff, new_pset))
+            base_terms = new_base_terms
+        # Each expanded term gets multiplied by the penalty coefficient lam.
+        for coeff, pset in base_terms:
+            p_str = pauli_string_from_set(pset)
+            add_term(p_str, lam * coeff)
+
+    # ---------------------------
+    # 4. Build connectivity penalty for partition T
+    #    For each v ≠ s, add the term:
+    #      (I + Z_v)/2 · ∏_{w in N(v)} ((I - Z_w)/2)
+    # ---------------------------
+    for v in graph.nodes():
+        if v == s:
+            continue
+        neighbors = list(graph.neighbors(v))
+        # Expand (I + Z_v)/2:
+        base_terms = [(1/2, set()), (1/2, {v})]
+        # For each neighbor w, multiply by the factor (I - Z_w)/2.
+        # This gives: I with coefficient 1/2 and Z with coefficient -1/2.
+        for w in neighbors:
+            new_base_terms = []
+            for coeff, pset in base_terms:
+                # Option 1: choose I on w (factor 1/2)
+                new_coeff = coeff * (1/2)
+                new_pset = deepcopy(pset)
+                new_base_terms.append((new_coeff, new_pset))
+                # Option 2: choose Z on w (factor -1/2)
+                new_coeff = coeff * (-1/2)
+                new_pset = deepcopy(pset)
+                if w in new_pset:
+                    new_pset.remove(w)
+                else:
+                    new_pset.add(w)
+                new_base_terms.append((new_coeff, new_pset))
+            base_terms = new_base_terms
+        for coeff, pset in base_terms:
+            p_str = pauli_string_from_set(pset)
+            add_term(p_str, lam * coeff)
+    
+    # ---------------------------
+    # 5. Prepare the final operator.
+    # ---------------------------
+    pauli_list = []
+    coeff_list = []
+    for p_str, coeff in terms.items():
+        if abs(coeff) > 1e-10:
+            pauli_list.append(p_str)
+            coeff_list.append(coeff)
+    
+    return SparsePauliOp.from_list(list(zip(pauli_list, coeff_list)))

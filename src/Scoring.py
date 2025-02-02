@@ -3,9 +3,7 @@ import networkx as nx
 from qiskit import QuantumCircuit, transpile
 
 # Brute-force approach with conditional checks
-def generate_solutions(graph):
-    verbose = False
-
+def generate_solutions(graph, verbose = False):
     G = graph
     n = len(G.nodes())
     w = np.zeros([n, n])

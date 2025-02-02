@@ -58,9 +58,10 @@ class QITEvolver:
             # Update the velocity (accumulated gradient) with the current gradient.
             velocity = momentum * velocity + lr * dcurr_params
             curr_params += velocity
+            # curr_params += lr * dcurr_params
 
-            # write in the tqdm bar the velocity and current energy
-            #tqdm.desc(f"Velocity: {velocity} | Energy: {curr_energy}")
+            # update the tqdm bar with the velocity and current energy
+            tqdm.write(f"Velocity: {velocity} | Energy: {curr_energy}")
             
             # Progress checkpoint!
             if verbose:
