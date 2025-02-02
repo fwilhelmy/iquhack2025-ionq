@@ -9,6 +9,7 @@ import networkx as nx
 from qiskit import QuantumCircuit
 from qiskit.circuit import ParameterVector
 from qiskit.quantum_info import SparsePauliOp
+
 from copy import deepcopy
 
 def build_ansatz(graph: nx.Graph) -> QuantumCircuit:
@@ -69,7 +70,6 @@ def build_new_ansatz(graph: nx.Graph) -> QuantumCircuit:
         #     ansatz.rz(b, q)
     
     return ansatz
-
 
 def build_maxcut_hamiltonian(graph: nx.Graph) -> SparsePauliOp:
     """
@@ -154,6 +154,82 @@ def build_balanced_maxcut_hamiltonian(graph: nx.Graph) -> SparsePauliOp:
     coeffs = [pauli_dict[term] for term in pauli_terms]
     
     return SparsePauliOp.from_list(list(zip(pauli_terms, coeffs)))
+
+import networkx as nx
+from qiskit.quantum_info import SparsePauliOp
+
+def build_balanced_maxcut_hamiltonian2(graph: nx.Graph, balance_coeff: float = 1.0) -> SparsePauliOp:
+    """
+    Build the balanced MaxCut Hamiltonian for the given graph with an adjustable balance penalty coefficient.
+    
+    The Hamiltonian is defined as:
+    
+        H = balance_coeff * (∑_v Z_v)² - ½ ∑_(u,v)∈E (1 - Z_u Z_v)
+    
+    which expands to:
+    
+        H = (balance_coeff * |V| - |E|/2)*I 
+            + 2*balance_coeff*∑_(u<v) Z_u Z_v 
+            + ½∑_(u,v)∈E Z_u Z_v.
+    
+    The parameter `balance_coeff` allows you to tune the importance of the balance penalty term 
+    (i.e. the \((\sum_v Z_v)^2\) term) relative to the MaxCut edge penalty.
+    
+    Args:
+        graph (nx.Graph): The input graph.
+        balance_coeff (float): Coefficient for the balance penalty term.
+    
+    Returns:
+        SparsePauliOp: The Pauli-string representation of the Hamiltonian.
+    """
+    num_qubits = len(graph.nodes)
+    nodes = list(graph.nodes)
+    # Map node labels to indices (in case nodes are not 0, 1, 2, ...)
+    node_to_index = {node: i for i, node in enumerate(nodes)}
+    edges = list(graph.edges())
+    num_edges = len(edges)
+    
+    # Use a dictionary to accumulate Pauli strings and their coefficients.
+    pauli_dict = {}
+    
+    # --- Identity term ---
+    # Contribution: balance_coeff*|V| (from (∑_v Z_v)²) and - (|E|/2) from the edge penalty.
+    identity = "I" * num_qubits
+    pauli_dict[identity] = balance_coeff * num_qubits - num_edges / 2
+    
+    # --- (∑_v Z_v)² term ---
+    # Expand (∑_v Z_v)² = ∑_v Z_v² + 2∑_(u<v) Z_u Z_v.
+    # Since Z² = I, the first term gives |V| I (already included above) and the off-diagonals contribute:
+    # 2*balance_coeff * Z_u Z_v for all u < v.
+    for u in range(num_qubits):
+        for v in range(u + 1, num_qubits):
+            pauli_list = ["I"] * num_qubits
+            pauli_list[u] = "Z"
+            pauli_list[v] = "Z"
+            pauli_str = "".join(pauli_list)
+            pauli_dict[pauli_str] = pauli_dict.get(pauli_str, 0) + 2.0 * balance_coeff
+
+    # --- Edge penalty term ---
+    # For each edge, add ½*Z_u Z_v. (The constant -½ from -½*(1 - Z_uZ_v) is already absorbed in the identity term.)
+    for (u, v) in edges:
+        # Use the mapping in case the node labels are not integers starting at 0.
+        i = node_to_index[u]
+        j = node_to_index[v]
+        # Ensure i < j for consistency.
+        if i > j:
+            i, j = j, i
+        pauli_list = ["I"] * num_qubits
+        pauli_list[i] = "Z"
+        pauli_list[j] = "Z"
+        pauli_str = "".join(pauli_list)
+        pauli_dict[pauli_str] = pauli_dict.get(pauli_str, 0) + 0.5
+
+    # --- Build the SparsePauliOp ---
+    pauli_terms = list(pauli_dict.keys())
+    coeffs = [pauli_dict[term] for term in pauli_terms]
+    
+    return SparsePauliOp.from_list(list(zip(pauli_terms, coeffs)))
+
 
 def build_maxcut_connectivity_hamiltonian(graph: nx.Graph, lam: float, r: int, s: int) -> SparsePauliOp:
     """

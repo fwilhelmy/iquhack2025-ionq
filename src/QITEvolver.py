@@ -60,11 +60,11 @@ class QITEvolver:
             Gmat, dvec, curr_energy = self.get_defining_ode(measurements)
             dcurr_params = np.linalg.lstsq(Gmat, dvec, rcond=1e-2)[0]
 
-            # Update the velocity (accumulated gradient) with the current gradient.
+            # Decaying the learning rate to make it smaller as we advance the step
             learning_rate = init_lr/(1+lr_decay*k)
+            # Update the velocity (accumulated gradient) with the current gradient.
             velocity = momentum * velocity + learning_rate * dcurr_params
             curr_params += velocity
-            # curr_params += init_lr * dcurr_params
 
             # update the tqdm bar with the velocity and current energy
             tqdm.write(f"Velocity: {velocity} | Learning Rate : {learning_rate} | Energy: {curr_energy}")
