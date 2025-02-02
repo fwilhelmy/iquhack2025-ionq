@@ -5,7 +5,7 @@
 - Chuck Garcia
 - Lana Azar
 - Femi Ositade
-- Dean
+- Dean Hu
 
 ## Challenge :
 - IONQ challenge
