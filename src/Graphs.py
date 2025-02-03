@@ -1,10 +1,15 @@
-# other graphs candidates to check
+## IonQ, Inc., Copyright (c) 2025,
+# All rights reserved.
+# Use in source and binary forms of this software, without modification,
+# is permitted solely for the purpose of activities associated with the IonQ
+# Hackathon at iQuHack2025 hosted by MIT and only during the Feb 1-2, 2025 
+# duration of such event.
 
 import networkx as nx
 import matplotlib.pyplot as plt
 import random
 
-#-> Cycle Graph C8
+# Cycle Graph C8
 def cycle_graph_c8(show=False):
     G = nx.cycle_graph(8)
     if show: 
@@ -26,7 +31,7 @@ def path_graph_p16(show=False):
         plt.show()
     return G
 
-#-> Complete Bipartite Graph K8,8
+# Complete Bipartite Graph K8,8
 def complete_bipartite_graph_k88(show=False):
     G = nx.complete_bipartite_graph(8, 8)
     if show: 
@@ -38,7 +43,7 @@ def complete_bipartite_graph_k88(show=False):
         plt.show()
     return G
 
-#-> Complete Bipartite Graph K8,8
+# Complete Bipartite Graph K8,8
 def complete_bipartite_graph_k_nn(n, show=False):
     G = nx.complete_bipartite_graph(n, n)
     if show: 
@@ -84,7 +89,7 @@ def grid_graph_nxm(n,m,show=False):
     return G
 
 
-#-> 4-Regular Graph with 8 Vertices
+# 4-Regular Graph with 8 Vertices
 def regular_graph_4_8(show=False):
     G = nx.random_regular_graph(d=4, n=8, seed=42)
     if show: 
@@ -95,7 +100,7 @@ def regular_graph_4_8(show=False):
         plt.show()
     return G
 
-#-> Cubic (3-Regular) Graph with 16 Vertices
+# Cubic (3-Regular) Graph with 16 Vertices
 def cubic_graph_3_16(show=False):
     G = nx.random_regular_graph(d=3, n=16, seed=42)
     if show: 
@@ -170,7 +175,7 @@ def wheel_graph_w16(show=False):
         plt.show()
     return G
 
-#-> Random Connected Graph with 16 Vertices
+# Random Connected Graph with 16 Vertices
 def random_connected_graph_16(p=0.15, show=False):
     #n, p = 16, 0.25
     n=16
@@ -197,7 +202,7 @@ def expander_graph_32(show=False):
         plt.show()
     return G
 
-#-> Expander Graph with n Vertices
+# Expander Graph with n Vertices
 def expander_graph_n(n,show=False):
     G = nx.random_regular_graph(4, n, seed=42)
     if show: 

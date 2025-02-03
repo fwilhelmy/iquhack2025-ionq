@@ -1,3 +1,10 @@
+## IonQ, Inc., Copyright (c) 2025,
+# All rights reserved.
+# Use in source and binary forms of this software, without modification,
+# is permitted solely for the purpose of activities associated with the IonQ
+# Hackathon at iQuHack2025 hosted by MIT and only during the Feb 1-2, 2025 
+# duration of such event.
+
 import numpy as np
 import networkx as nx
 from qiskit import QuantumCircuit, transpile
@@ -63,7 +70,7 @@ def generate_solutions(graph, verbose = False):
             if verbose:
                 print(outstr)
 
-    return {"brute": {"best_cost": best_cost_brute, "best_solution": xbest_brute, "solutions": XS_brut},
+    return {"base": {"best_cost": best_cost_brute, "best_solution": xbest_brute, "solutions": XS_brut},
             "balanced": {"best_cost": best_cost_balanced, "best_solution": xbest_balanced, "solutions": XS_balanced},
             "connected": {"best_cost": best_cost_connected, "best_solution": xbest_connected, "solutions": XS_connected}, }
 

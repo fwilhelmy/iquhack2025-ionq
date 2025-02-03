@@ -67,7 +67,8 @@ class QITEvolver:
             curr_params += velocity
 
             # update the tqdm bar with the velocity and current energy
-            tqdm.write(f"Velocity: {velocity} | Learning Rate : {learning_rate} | Energy: {curr_energy}")
+            if verbose:
+                tqdm.write(f"Velocity: {velocity} | Learning Rate : {learning_rate} | Energy: {curr_energy}")
             
             # Progress checkpoint!
             if verbose:
